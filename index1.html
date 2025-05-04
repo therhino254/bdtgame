@@ -1,0 +1,124 @@
+// server.js
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const gameRoutes = require('./routes/game');
+const userRoutes = require('./routes/user');
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+mongoose.connect('mongodb://localhost/color-game', { useNewUrlParser: true, useUnifiedTopology: true });
+
+app.use('/api/game', gameRoutes);
+app.use('/api/user', userRoutes);
+
+app.listen(5000, () => console.log('Server running on port 5000'));
+
+// models/User.js
+const mongoose = require('mongoose');
+
+const userSchema = new mongoose.Schema({
+  username: String,
+  password: String,
+  balance: { type: Number, default: 1000 },
+});
+
+module.exports = mongoose.model('User', userSchema);
+
+// models/Prediction.js
+const mongoose = require('mongoose');
+
+const predictionSchema = new mongoose.Schema({
+  userId: mongoose.Schema.Types.ObjectId,
+  round: Number,
+  color: String,
+  size: String,
+  amount: Number,
+  result: String, // 'win' or 'lose'
+});
+
+module.exports = mongoose.model('Prediction', predictionSchema);
+
+// routes/game.js
+const express = require('express');
+const router = express.Router();
+const Prediction = require('../models/Prediction');
+const User = require('../models/User');
+
+let currentRound = 1;
+let currentNumber = Math.floor(Math.random() * 10);
+setInterval(() => {
+  currentNumber = Math.floor(Math.random() * 10);
+  currentRound += 1;
+}, 30000);
+
+function getColor(num) {
+  if (num === 0 || num === 5) return 'Violet';
+  if (num % 2 === 0) return 'Green';
+  return 'Red';
+}
+
+function getSize(num) {
+  return num >= 5 ? 'Big' : 'Small';
+}
+
+router.post('/predict', async (req, res) => {
+  const { userId, color, size, amount } = req.body;
+  const user = await User.findById(userId);
+  if (!user || user.balance < amount) return res.status(400).send('Insufficient funds');
+
+  const predictedColor = getColor(currentNumber);
+  const predictedSize = getSize(currentNumber);
+
+  const colorWin = color === predictedColor;
+  const sizeWin = size === predictedSize;
+
+  const win = colorWin || sizeWin;
+  const payout = win ? amount * 2 : 0;
+  user.balance += payout - amount;
+  await user.save();
+
+  const prediction = new Prediction({
+    userId,
+    round: currentRound,
+    color,
+    size,
+    amount,
+    result: win ? 'win' : 'lose',
+  });
+
+  await prediction.save();
+  res.send({ win, newBalance: user.balance, drawnNumber: currentNumber });
+});
+
+module.exports = router;
+
+// routes/user.js
+const express = require('express');
+const router = express.Router();
+const User = require('../models/User');
+
+router.post('/register', async (req, res) => {
+  const user = new User(req.body);
+  await user.save();
+  res.send(user);
+});
+
+router.post('/login', async (req, res) => {
+  const user = await User.findOne({ username: req.body.username });
+  res.send(user);
+});
+
+router.post('/transaction', async (req, res) => {
+  const { userId, amount } = req.body;
+  const user = await User.findById(userId);
+  if (!user) return res.status(404).send("User not found");
+
+  user.balance += amount;
+  await user.save();
+  res.send(user);
+});
+
+module.exports = router;
