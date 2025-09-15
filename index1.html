@@ -1,124 +1,202 @@
-// server.js
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const gameRoutes = require('./routes/game');
-const userRoutes = require('./routes/user');
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monetag James Bot</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+    .container {
+      background: #1c1c1c;
+      width: 350px;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+    .header {
+      background: linear-gradient(90deg, #00c853, #ff6f00);
+      padding: 20px;
+      text-align: center;
+    }
+    .header h2 {
+      margin: 0;
+      font-size: 18px;
+    }
+    .header p {
+      margin: 4px 0;
+      font-size: 14px;
+    }
+    .stats {
+      display: flex;
+      justify-content: space-around;
+      margin: 15px 0;
+      text-align: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .stats div {
+      background: #222;
+      padding: 10px;
+      border-radius: 8px;
+      min-width: 90px;
+    }
+    .stats div h3 {
+      margin: 5px 0;
+      color: #00e676;
+    }
+    .progress-bar {
+      background: #333;
+      border-radius: 10px;
+      margin: 10px 20px;
+      height: 10px;
+      overflow: hidden;
+    }
+    .progress {
+      background: linear-gradient(90deg, #00c853, #ff6f00);
+      width: 0%;
+      height: 100%;
+      transition: width 0.3s ease;
+    }
+    .buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 15px;
+    }
+    button {
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      cursor: pointer;
+      font-weight: bold;
+      color: white;
+    }
+    .watch {
+      background: linear-gradient(90deg, #00c853, #ff6f00);
+    }
+    .auto {
+      background: linear-gradient(90deg, #ff6f00, #ff3d00);
+    }
+    .stop {
+      background: linear-gradient(90deg, #00c853, #009688);
+    }
+    .footer {
+      text-align: center;
+      padding: 15px;
+      background: #181818;
+    }
+    .footer button {
+      background: #2979ff;
+      padding: 10px 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h2>Monetag James Bot - Premium Ad Reward System</h2>
+      <p>Welcome, <b>User7100</b><br>User ID: #USR-74722</p>
+    </div>
+    <div class="stats">
+      <div>
+        <p>Watched Ads</p>
+        <h3 id="watched">0</h3>
+      </div>
+      <div>
+        <p>Earned Points</p>
+        <h3 id="points">0.00</h3>
+      </div>
+      <div>
+        <p>Level</p>
+        <h3 id="level">1</h3>
+      </div>
+    </div>
+    <div class="progress-bar">
+      <div class="progress" id="progress"></div>
+    </div>
+    <div class="buttons">
+      <button class="watch" onclick="watchAd()">Watch Ad (+0.50)</button>
+      <button class="auto" onclick="startAutoAds()">Auto Show Ads</button>
+      <button class="stop" onclick="stopAutoAds()">Stop Auto Ads</button>
+    </div>
+    <div class="footer">
+      <p>Visit Our Website</p>
+      <button onclick="visitSite()">Visit Website</button>
+    </div>
+  </div>
 
-const app = express();
-app.use(cors());
-app.use(express.json());
+  <script>
+    let watchedAds = 0;
+    let points = 0;
+    let progress = 0;
+    let autoInterval;
+    let level = 1;
 
-mongoose.connect('mongodb://localhost/color-game', { useNewUrlParser: true, useUnifiedTopology: true });
+    function updateUI() {
+      document.getElementById('watched').innerText = watchedAds;
+      document.getElementById('points').innerText = points.toFixed(2);
+      document.getElementById('progress').style.width = progress + "%";
+      document.getElementById('level').innerText = level;
+    }
 
-app.use('/api/game', gameRoutes);
-app.use('/api/user', userRoutes);
+    function rewardUser() {
+      watchedAds++;
+      points += 50; // each ad = 50 points
+      progress += 10; // +10% per ad
 
-app.listen(5000, () => console.log('Server running on port 5000'));
+      if (progress >= 100) {
+        progress = 0; // reset progress bar
+        level++;
+        alert("🎉 Level Up! You reached Level " + level);
+      }
 
-// models/User.js
-const mongoose = require('mongoose');
+      updateUI();
+      alert('✅ You have seen an ad and earned 50 points!');
+    }
 
-const userSchema = new mongoose.Schema({
-  username: String,
-  password: String,
-  balance: { type: Number, default: 1000 },
-});
+    function watchAd() {
+      // Rewarded interstitial
+      show_9881475().then(() => {
+          rewardUser();
+      }).catch(e => {
+          console.log("Ad error:", e);
+      });
+    }
 
-module.exports = mongoose.model('User', userSchema);
+    function startAutoAds() {
+      if (!autoInterval) {
+        autoInterval = setInterval(() => {
+          show_9881475().then(() => {
+            rewardUser();
+          }).catch(e => {
+            console.log("Ad error:", e);
+          });
+        }, 5000); // auto ad every 5 seconds
+      }
+    }
 
-// models/Prediction.js
-const mongoose = require('mongoose');
+    function stopAutoAds() {
+      clearInterval(autoInterval);
+      autoInterval = null;
+    }
 
-const predictionSchema = new mongoose.Schema({
-  userId: mongoose.Schema.Types.ObjectId,
-  round: Number,
-  color: String,
-  size: String,
-  amount: Number,
-  result: String, // 'win' or 'lose'
-});
+    function visitSite() {
+      window.open("https://yourwebsite.com", "_blank");
+    }
 
-module.exports = mongoose.model('Prediction', predictionSchema);
+    updateUI();
+  </script>
 
-// routes/game.js
-const express = require('express');
-const router = express.Router();
-const Prediction = require('../models/Prediction');
-const User = require('../models/User');
-
-let currentRound = 1;
-let currentNumber = Math.floor(Math.random() * 10);
-setInterval(() => {
-  currentNumber = Math.floor(Math.random() * 10);
-  currentRound += 1;
-}, 30000);
-
-function getColor(num) {
-  if (num === 0 || num === 5) return 'Violet';
-  if (num % 2 === 0) return 'Green';
-  return 'Red';
-}
-
-function getSize(num) {
-  return num >= 5 ? 'Big' : 'Small';
-}
-
-router.post('/predict', async (req, res) => {
-  const { userId, color, size, amount } = req.body;
-  const user = await User.findById(userId);
-  if (!user || user.balance < amount) return res.status(400).send('Insufficient funds');
-
-  const predictedColor = getColor(currentNumber);
-  const predictedSize = getSize(currentNumber);
-
-  const colorWin = color === predictedColor;
-  const sizeWin = size === predictedSize;
-
-  const win = colorWin || sizeWin;
-  const payout = win ? amount * 2 : 0;
-  user.balance += payout - amount;
-  await user.save();
-
-  const prediction = new Prediction({
-    userId,
-    round: currentRound,
-    color,
-    size,
-    amount,
-    result: win ? 'win' : 'lose',
-  });
-
-  await prediction.save();
-  res.send({ win, newBalance: user.balance, drawnNumber: currentNumber });
-});
-
-module.exports = router;
-
-// routes/user.js
-const express = require('express');
-const router = express.Router();
-const User = require('../models/User');
-
-router.post('/register', async (req, res) => {
-  const user = new User(req.body);
-  await user.save();
-  res.send(user);
-});
-
-router.post('/login', async (req, res) => {
-  const user = await User.findOne({ username: req.body.username });
-  res.send(user);
-});
-
-router.post('/transaction', async (req, res) => {
-  const { userId, amount } = req.body;
-  const user = await User.findById(userId);
-  if (!user) return res.status(404).send("User not found");
-
-  user.balance += amount;
-  await user.save();
-  res.send(user);
-});
-
-module.exports = router;
+  <script src='//libtl.com/sdk.js' data-zone='9881475' data-sdk='show_9881475'></script>
+</body>
+</html>
